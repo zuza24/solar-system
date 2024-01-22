@@ -1,0 +1,136 @@
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import numpy as np
+
+# Constants
+G = 6.67430e-11  # gravitational constant (m^3 kg^−1 s^−2)
+AU = 149.6e9  # astronomical unit (m)
+
+# given initial conditions
+sun_mass = 1.989e30  # kg
+mercury_mass = 0.33e24  # kg
+venus_mass = 4.869e24  # kg
+earth_mass = 5.974e24  # kg
+mars_mass = 0.647e24  # kg
+
+sun_position = np.array([0, 0])
+sun_velocity = np.array([0, 0])
+
+mercury_position = np.array([0.387 * AU, 0])
+mercury_velocity = np.array([0, 47.36e3])
+
+venus_position = np.array([0.723 * AU, 0])
+venus_velocity = np.array([0, 35.02e3])
+
+earth_position = np.array([1 * AU, 0])
+earth_velocity = np.array([0, 29.78e3])
+
+mars_position = np.array([1.524 * AU, 0])
+mars_velocity = np.array([0, 24.07e3])
+
+# Simulation parameters
+total_time = 3.15e7  # seconds (1 year)
+time_step = 86400  # seconds (1 day)
+num_steps = int(total_time / time_step)
+
+# Arrays to store positions for plotting
+mercury_positions = np.zeros((num_steps, 2))
+venus_positions = np.zeros((num_steps, 2))
+earth_positions = np.zeros((num_steps, 2))
+mars_positions = np.zeros((num_steps, 2))
+
+# Arrays to store orbits
+mercury_orbit = np.zeros((num_steps, 2))
+venus_orbit = np.zeros((num_steps, 2))
+earth_orbit = np.zeros((num_steps, 2))
+mars_orbit = np.zeros((num_steps, 2))
+
+# Function to update positions of the planets
+def update_positions(frame):
+    global mercury_position, venus_position, earth_position, mars_position, mercury_velocity, venus_velocity, earth_velocity, mars_velocity
+
+# to calculate distances and gravitational forces
+    sun_mercury_dist = np.linalg.norm(mercury_position - sun_position)
+    sun_venus_dist = np.linalg.norm(venus_position - sun_position)
+    sun_earth_dist = np.linalg.norm(earth_position - sun_position)
+    sun_mars_dist = np.linalg.norm(mars_position - sun_position)
+
+    force_mercury = G * (sun_mass * mercury_mass) / (sun_mercury_dist**2)
+    force_venus = G * (sun_mass * venus_mass) / (sun_venus_dist**2)
+    force_earth = G * (sun_mass * earth_mass) / (sun_earth_dist**2)
+    force_mars = G * (sun_mass * mars_mass) / (sun_mars_dist**2)
+
+# Calculate accelerations
+    acceleration_mercury = -force_mercury / mercury_mass * (mercury_position - sun_position) / sun_mercury_dist
+    acceleration_venus = -force_venus / venus_mass * (venus_position - sun_position) / sun_venus_dist
+    acceleration_earth = -force_earth / earth_mass * (earth_position - sun_position) / sun_earth_dist
+    acceleration_mars = -force_mars / mars_mass * (mars_position - sun_position) / sun_mars_dist
+
+# Update velocities and positions 
+    mercury_velocity += acceleration_mercury * time_step
+    venus_velocity += acceleration_venus * time_step
+    earth_velocity += acceleration_earth * time_step
+    mars_velocity += acceleration_mars * time_step
+
+    mercury_position += mercury_velocity * time_step
+    venus_position += venus_velocity * time_step
+    earth_position += earth_velocity * time_step
+    mars_position += mars_velocity * time_step
+
+# Store positions for plotting
+    mercury_positions[frame] = mercury_position
+    venus_positions[frame] = venus_position
+    earth_positions[frame] = earth_position
+    mars_positions[frame] = mars_position
+
+# Store orbits for plotting
+    mercury_orbit[frame] = mercury_position
+    venus_orbit[frame] = venus_position
+    earth_orbit[frame] = earth_position
+    mars_orbit[frame] = mars_position
+
+# Create a figure and axis
+fig, ax = plt.subplots(figsize=(10, 10))
+ax.set_xlim(-2 * AU, 2 * AU)
+ax.set_ylim(-2 * AU, 2 * AU)
+
+# Plot the Sun
+ax.scatter(0, 0, color='yellow', s=100, label='Sun')
+
+# Initialize orbit lines for each planet
+mercury_orbit_line, = ax.plot([], [], label='Mercury Orbit', linestyle='solid', linewidth=1)
+venus_orbit_line, = ax.plot([], [], label='Venus Orbit', linestyle='solid', linewidth=1)
+earth_orbit_line, = ax.plot([], [], label='Earth Orbit', linestyle='solid', linewidth=1)
+mars_orbit_line, = ax.plot([], [], label='Mars Orbit', linestyle='solid', linewidth=1)
+# Initialize planet position lines
+mercury_line, = ax.plot([], [], 'bo', label='Mercury')
+venus_line, = ax.plot([], [], 'ro', label='Venus')
+earth_line, = ax.plot([], [], 'go', label='Earth')
+mars_line, = ax.plot([], [], 'mo', label='Mars')
+
+def update(frame):
+  update_positions(frame)
+
+  # Update planet positions
+  mercury_line.set_data(mercury_positions[frame, 0], mercury_positions[frame, 1])
+  venus_line.set_data(venus_positions[frame, 0], venus_positions[frame, 1])
+  earth_line.set_data(earth_positions[frame, 0], earth_positions[frame, 1])
+  mars_line.set_data(mars_positions[frame, 0], mars_positions[frame, 1])
+
+  # Update orbit lines
+  mercury_orbit_line.set_data(mercury_positions[:frame, 0], mercury_positions[:frame, 1])
+  venus_orbit_line.set_data(venus_positions[:frame, 0], venus_positions[:frame, 1])
+  earth_orbit_line.set_data(earth_positions[:frame, 0], earth_positions[:frame, 1])
+  mars_orbit_line.set_data(mars_positions[:frame, 0], mars_positions[:frame, 1])
+
+  return mercury_line, venus_line, earth_line, mars_line, mercury_orbit_line, venus_orbit_line, earth_orbit_line, mars_orbit_line
+
+# Set up the animation
+ani = animation.FuncAnimation(fig, update, frames=num_steps, interval=50, blit=True)
+
+# Display the animation
+plt.title('Solar System Simulation')
+plt.xlabel('X position (meters)')
+plt.ylabel('Y position (meters)')
+plt.legend()
+plt.show()
